@@ -91,23 +91,6 @@ Type anything. Results appear as you type, grouped by type: **APPS**, **SETTINGS
 
 ---
 
-## Opinions
-
-This tool makes deliberate choices. Here is what they are and why.
-
-**It does not use Electron.**  
-Electron ships a full Chromium browser in every app. That is 150MB of overhead for a search box. `windows-search-tool` uses Tauri, which renders via the WebView2 runtime already present on every modern Windows installation. The binary is ~5MB.
-
-**It does not run a background indexer.**  
-Most search tools run persistent services that watch the filesystem in real time. This uses CPU, memory, and disk I/O continuously. Instead, `windows-search-tool` builds its index once at launch from the Start Menu — a scan that takes under 200ms — and keeps it in memory. For the 90% use case (finding apps and settings), this is faster and cheaper than a daemon.
-
-**It does not require administrator rights.**  
-The executable runs as the current user (`asInvoker`). The startup key is written to `HKCU`, not `HKLM`. The global hotkey is registered through the user-space API. Nothing in this tool requires elevation, and it will never prompt for it.
-
-**It is progressive.**  
-A search tool shouldn't take up half your screen until it has something to show you. It starts as a simple bar and grows only when you start typing.
-
----
 
 ## Architecture
 
