@@ -17,6 +17,11 @@ No bloat. No Electron. No admin rights. Just search.
 
 </div>
 
+---
+
+![windows-search-tool demo](demo/demo.gif)
+
+---
 
 ## The Problem
 
