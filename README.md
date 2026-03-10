@@ -10,7 +10,7 @@ No bloat. No Electron. No admin rights. Just search.
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8D8?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
 [![Rust](https://img.shields.io/badge/backend-Rust-CE422B?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![React](https://img.shields.io/badge/ui-React-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev)
-[![License: MIT](https://img.shields.io/badge/license-MIT-6EE7B7?style=flat-square)](#license)
+[![Developer: Pranav Raizada](https://img.shields.io/badge/developer-Pranav%20Raizada-blue?style=flat-square)](https://github.com/PranavRaizada)
 
 </div>
 
@@ -34,17 +34,18 @@ It is opinionated: it searches the things most people search for most of the tim
 
 ## Features
 
-- **`Ctrl+Space` global hotkey** — works from any application, no focus required
-- **Fuzzy search** — typo-tolerant matching powered by the skim algorithm
-- **Instant results** — index lives in RAM, searches complete in under 5ms
-- **Apps** — all `.lnk` shortcuts from your Start Menu, both system and user
-- **Settings** — 15+ common Windows Settings pages accessible by name
-- **Web fallback** — bottom result always opens a Google search for your query
-- **Auto-hide on blur** — window disappears when you click away, like it should
-- **System tray** — runs silently in the background, accessible via tray icon
-- **Auto-start on login** — registers to `HKCU` run key, no admin required
-- **Non-admin** — `asInvoker` execution level, zero UAC prompts, ever
-- **Portable** — single `.exe`, no installer, no registry dependencies beyond startup key
+- **`Ctrl+Space` global hotkey** — works from any application, no focus required.
+- **Fluent Design (Mica)** — A high-end Windows 11-inspired interface with deep 32px backdrop blur and high-contrast typography.
+- **Native Icon Extraction** — Rust-powered extraction of real icons from `.lnk` and `.exe` files for instant recognition.
+- **Progressive Disclosure** — UI starts as a minimal search bar and expands gracefully as you type.
+- **Fuzzy Search** — Typo-tolerant matching powered by the `skim` algorithm.
+- **Open Folder Action** — Functional action buttons to jump directly to an item's containing directory.
+- **Theme Switching** — Auto-detects system Light/Dark mode with a manual toggle in the search bar.
+- **Instant results** — Index lives in RAM, searches complete in under 5ms.
+- **Web fallback** — Bottom result always opens a Google search for your query in your default browser.
+- **System tray** — Runs silently in the background, accessible via tray icon.
+- **Auto-start on login** — Registers to `HKCU` run key, no admin required.
+- **Non-admin** — `asInvoker` execution level, zero UAC prompts, ever.
 
 ---
 
@@ -64,10 +65,10 @@ That's it.
 **Prerequisites:** [Rust](https://rustup.rs) · [Node.js 18+](https://nodejs.org) · [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (pre-installed on Win10 1803+ and all Win11)
 
 ```bash
-git clone https://github.com/you/windows-search-tool
+git clone https://github.com/PranavRaizada/windows-search-tool
 cd windows-search-tool
 npm install
-npm run tauri build -- --bundles none
+npm run tauri build
 ```
 
 Output: `src-tauri/target/release/windows-search-tool.exe`
@@ -81,10 +82,12 @@ Output: `src-tauri/target/release/windows-search-tool.exe`
 | Open search | `Ctrl+Space` |
 | Navigate results | `↑` / `↓` |
 | Launch selected | `Enter` |
+| Open Folder | Click folder icon |
+| Switch Theme | Click sun/moon icon |
 | Clear / close | `Esc` |
 | Click away | Auto-closes |
 
-Type anything. Results appear as you type, grouped by type: **Apps**, **Settings**, **Files**, **Web**. The index is built when the app launches — there is no background indexing service.
+Type anything. Results appear as you type, grouped by type: **APPS**, **SETTINGS**, **FILES**, **WEB**.
 
 ---
 
@@ -101,11 +104,8 @@ Most search tools run persistent services that watch the filesystem in real time
 **It does not require administrator rights.**  
 The executable runs as the current user (`asInvoker`). The startup key is written to `HKCU`, not `HKLM`. The global hotkey is registered through the user-space API. Nothing in this tool requires elevation, and it will never prompt for it.
 
-**It hides on blur.**  
-This is how a launcher should behave. You open it, search, press Enter, and it disappears. You do not manage it as a window. If you pressed `Esc` or clicked somewhere else, you did not want it anymore.
-
-**It is not a file explorer.**  
-Deep file search, preview panes, and folder browsing are out of scope. Those are features for a file manager. This is a launcher. It finds things and opens them.
+**It is progressive.**  
+A search tool shouldn't take up half your screen until it has something to show you. It starts as a simple bar and grows only when you start typing.
 
 ---
 
@@ -113,35 +113,18 @@ Deep file search, preview panes, and folder browsing are out of scope. Those are
 
 ```
 windows-search-tool/
-├── src/                      React + Vite frontend
-│   ├── App.tsx               Main UI — glass-morphism dark theme
-│   └── main.tsx              Tauri entry point
+├── src/                      React + Vite frontend (Fluent / Mica UI)
+│   ├── App.tsx               Main UI & Theme Logic
+│   └── App.css               Windows 11 Obsidian Material Styles
 └── src-tauri/
     ├── src/
-    │   ├── main.rs           Tauri setup, hotkey registration, tray, window events
-    │   ├── indexer.rs        Start Menu scanner, settings registry, in-memory store
-    │   ├── search.rs         Fuzzy matching via skim algorithm, result ranking
-    │   └── launcher.rs       Shell execution, ms-settings: URIs, .lnk resolution
-    ├── tauri.conf.json       Frameless transparent window, asInvoker execution level
-    └── Cargo.toml            Rust dependencies
-```
-
-**Hotkey → display flow:**
-```
-Ctrl+Space keypress (any app)
-  └─ tauri-plugin-global-shortcut (user-space, no hooks driver)
-       └─ Toggle window visibility
-            └─ window.show() + set_focus()
-                 └─ React UI renders, input auto-focused
-```
-
-**Search flow:**
-```
-Keystroke in input (debounced 50ms)
-  └─ invoke("search_items", { query })
-       └─ Rust: fuzzy_match() against in-memory Vec<IndexEntry>
-            └─ Sort by score, truncate to 12
-                 └─ Results returned to React in <5ms
+    │   ├── main.rs           Tauri setup, hotkey, tray, and auto-start
+    │   ├── indexer.rs        Start Menu scanner & settings registry
+    │   ├── icons.rs          Native HICON to Base64 PNG extraction (WinAPI)
+    │   ├── search.rs         Fuzzy matching via skim algorithm
+    │   └── launcher.rs       Shell execution & URL handling
+    ├── tauri.conf.json       Branding, window config, and capabilities
+    └── Cargo.toml            Rust dependencies (WinAPI, image, fuzzy-matcher)
 ```
 
 ---
@@ -150,8 +133,8 @@ Keystroke in input (debounced 50ms)
 
 | Metric | Value |
 |---|---|
-| Binary size | ~5MB |
-| Memory usage (idle) | ~18MB |
+| Binary size | >10MB |
+| Memory usage (idle) | >18MB |
 | Index build time | <200ms at launch |
 | Search latency | <5ms (in-memory) |
 | Hotkey response time | <16ms |
@@ -170,17 +153,6 @@ Measured on a mid-range laptop, Windows 11 23H2.
 
 ---
 
-## Roadmap
-
-- [ ] File search via Windows Search API (`windows-rs`)
-- [ ] Calculator — evaluate expressions directly in the search box
-- [ ] Clipboard history integration
-- [ ] Custom hotkey configuration
-- [ ] Plugin API for custom result providers
-- [ ] Theme customization (light mode, accent colors)
-
----
-
 ## Building & Contributing
 
 ```bash
@@ -188,17 +160,16 @@ Measured on a mid-range laptop, Windows 11 23H2.
 npm run tauri dev
 
 # Production build (single portable exe)
-npm run tauri build -- --bundles none
+npm run tauri build
 
-# Run tests
+# Run backend tests
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
-
-Pull requests are welcome. Please open an issue before working on a large feature to discuss whether it fits the scope of the project. Features that require elevated privileges, background services, or add more than ~2MB to the binary will generally not be accepted — that is not a judgement of their quality, it is a statement of what this tool is.
 
 --- 
 <div align="center">
 
+**Created by Pranav Raizada**  
 Made because Windows Search is not good enough.
 
 </div>
