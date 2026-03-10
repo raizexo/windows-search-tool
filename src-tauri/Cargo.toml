@@ -3,6 +3,7 @@ name = "windows-search-tool"
 version = "1.0.0"
 description = "A fast, minimal, non-admin Windows search utility built with Tauri 2, Rust, and React."
 authors = ["Pranav Raizada"]
+license = "MIT"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

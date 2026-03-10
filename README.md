@@ -12,6 +12,7 @@ No bloat. No Electron. No admin rights. Just search.
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8D8?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
 [![Rust](https://img.shields.io/badge/backend-Rust-CE422B?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![React](https://img.shields.io/badge/ui-React-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev)
+[![License: MIT](https://img.shields.io/badge/license-MIT-6EE7B7?style=flat-square)](LICENSE)
 [![Developer: Pranav Raizada](https://img.shields.io/badge/developer-Pranav%20Raizada-blue?style=flat-square)](https://github.com/PranavRaizada)
 
 </div>

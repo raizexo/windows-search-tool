@@ -2,7 +2,8 @@
   "name": "windows-search-tool",
   "private": true,
   "author": "Pranav Raizada",
-  "version": "1.0.0",
+  "license": "MIT",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
