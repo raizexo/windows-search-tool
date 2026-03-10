@@ -1,10 +1,12 @@
 <div align="center">
 
+<img src="windows-search-tool.png" width="128" height="128" alt="windows-search-tool icon" />
+
 # windows-search-tool
 
 **The search Windows should have shipped with.**
 
-A fast, minimal, opinionated search utility for Windows 10 and 11.  
+A fast, minimal, opinionated search utility for Windows 11.  
 No bloat. No Electron. No admin rights. Just search.
 
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24C8D8?style=flat-square&logo=tauri&logoColor=white)](https://tauri.app)
@@ -14,7 +16,6 @@ No bloat. No Electron. No admin rights. Just search.
 
 </div>
 
----
 
 ## The Problem
 
@@ -26,9 +27,9 @@ Windows Search is slow, heavy, and broken by default. It indexes things you don'
 
 ## What It Is
 
-A single portable `.exe` — around 5MB — that sits in your system tray and launches instantly with `Ctrl+Space`. It searches your installed apps, files, and system settings using a fuzzy-matching engine backed by an in-memory index built from your Start Menu at launch. No daemons. No services. No installer. No UAC prompt.
+A single portable `.exe` - > 10MB - that sits in your system tray and launches instantly with `Ctrl+Space`. It searches your installed apps, files, and system settings using a fuzzy-matching engine backed by an in-memory index built from your Start Menu at launch. No daemons. No services. No installer. No UAC prompt.
 
-It is opinionated: it searches the things most people search for most of the time, and it does that extremely well. It does not try to be everything.
+It searches the things most people search for most of the time, and it does that extremely well. It does not try to be everything.
 
 ---
 
@@ -53,10 +54,9 @@ It is opinionated: it searches the things most people search for most of the tim
 
 ### Option A — Download the release (recommended)
 
-1. Download `windows-search-tool.exe` from [Releases](#)
-2. Move it anywhere you like (e.g. `C:\Users\You\Tools\`)
-3. Run it once — it auto-registers for startup and adds a tray icon
-4. Press `Ctrl+Space` to open
+1. Download `windows-search-tool.exe` from [Releases](https://github.com/raizexo/windows-search-tool/releases)
+2. Run it once — it auto-registers for startup and adds a tray icon
+3. Press `Ctrl+Space` to open
 
 That's it.
 
@@ -116,21 +116,19 @@ windows-search-tool/
 
 | Metric | Value |
 |---|---|
-| Binary size | >10MB |
-| Memory usage (idle) | >18MB |
-| Index build time | <200ms at launch |
-| Search latency | <5ms (in-memory) |
-| Hotkey response time | <16ms |
-| Startup time to ready | <800ms |
+| Binary size | 6.46 MB |
+| Memory usage (idle) | ~25 MB |
+| Index build time | <1.6s (includes icons) |
+| Search latency | <1ms (in-memory) |
 
-Measured on a mid-range laptop, Windows 11 23H2.
+Measured on a mid-range machine, Windows 11.
 
 ---
 
 ## Requirements
 
-- Windows 10 (1803 or later) or Windows 11
-- WebView2 Runtime (pre-installed on Win10 April 2018 Update+ and all Win11)
+- Windows 11
+- WebView2 Runtime (pre-installed Win11)
 - No administrator rights
 - No .NET, no VC++ redistributables, no additional runtimes
 

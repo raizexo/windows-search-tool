@@ -13,6 +13,7 @@ pub struct SearchResult {
 
 #[tauri::command]
 pub fn search_items(query: String) -> Vec<SearchResult> {
+    let start = std::time::Instant::now();
     if query.trim().is_empty() {
         return vec![];
     }
@@ -37,6 +38,7 @@ pub fn search_items(query: String) -> Vec<SearchResult> {
 
     results.sort_by(|a, b| b.score.cmp(&a.score).then(a.name.cmp(&b.name)));
     results.truncate(12);
+    println!("PERF: Search for '{}' took {:?}", query, start.elapsed());
     results
 }
 

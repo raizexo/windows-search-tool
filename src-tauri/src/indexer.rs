@@ -17,6 +17,7 @@ pub fn get_index() -> &'static Mutex<Vec<IndexEntry>> {
 }
 
 pub fn build_index() {
+    let start = std::time::Instant::now();
     let mut entries: Vec<IndexEntry> = vec![];
 
     // --- Scan Start Menu for .lnk (installed apps) ---
@@ -77,6 +78,7 @@ pub fn build_index() {
     if let Ok(mut index) = get_index().lock() {
         *index = entries;
     }
+    println!("PERF: Index built in {:?}", start.elapsed());
 }
 
 #[cfg(test)]
