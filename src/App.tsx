@@ -281,7 +281,7 @@ export default function App() {
                   </div>
                 </div>
                 {copiedIndex === idx && <span className="copied-label">Copied!</span>}
-                {item.kind !== 'web' && item.kind !== 'setting' && item.kind !== 'clipboard' && item.kind !== 'math' && (
+                {item.kind !== 'web' && item.kind !== 'setting' && item.kind !== 'clipboard' && item.kind !== 'math' && item.kind !== 'kill' && (
                   <div 
                     className="action-btn" 
                     title="Open in folder"

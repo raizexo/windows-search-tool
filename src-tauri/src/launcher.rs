@@ -42,7 +42,7 @@ pub fn open_path(path: String) -> Result<(), String> {
 #[tauri::command]
 pub fn kill_process(name: String) -> Result<(), String> {
     Command::new("taskkill")
-        .args(["/F", "/IM", &format!("{}.exe", name)])
+        .args(["/F", "/PID", &name])
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
