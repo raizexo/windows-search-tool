@@ -10,7 +10,6 @@ use windows::Win32::UI::WindowsAndMessaging::{
 use windows::Win32::System::DataExchange::AddClipboardFormatListener;
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::core::PCWSTR;
-use tauri_plugin_clipboard_manager::ClipboardExt;
 
 pub static CLIPBOARD_HISTORY: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
 
@@ -57,7 +56,7 @@ unsafe extern "system" fn window_proc(
 pub fn init_clipboard_listener() {
     thread::spawn(|| unsafe {
         let h_instance = GetModuleHandleW(None).unwrap();
-        let class_name = windows::core::w!("WinSearchClipboardListener");
+        let class_name = windows::core::w!("Windows Search ToolClipboardListener");
 
         let wc = WNDCLASSW {
             style: CS_HREDRAW | CS_VREDRAW,

@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "WinSearch",
+        "title": "Windows Search Tool",
         "width": 680,
         "height": 620,
         "minWidth": 680,

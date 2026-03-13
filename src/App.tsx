@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { listen } from "@tauri-apps/api/event";
 import { 
   Search24Regular, 
   Apps20Regular, 
@@ -8,8 +8,6 @@ import {
   Document20Regular, 
   Globe20Regular, 
   FolderOpen20Regular,
-  WeatherMoon20Regular,
-  WeatherSunny20Regular,
   Calculator20Regular,
   Clipboard20Regular,
   Dismiss20Regular
@@ -24,9 +22,13 @@ interface SearchResult {
   icon_base64?: string;
 }
 
-type Theme = "light" | "dark" | "system";
+interface FullConfig {
+  hotkey: string;
+  theme: string;
+  startup: boolean;
+}
 
-const KIND_ICONS: Record<string, JSX.Element> = {
+const KIND_ICONS: Record<string, React.ReactNode> = {
   app:     <Apps20Regular />,
   file:    <Document20Regular />,
   setting: <Settings20Regular />,
@@ -41,7 +43,7 @@ export default function App() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme]     = useState<Theme>("system");
+  const [theme, setTheme]     = useState<string>("system");
   const [effectiveTheme, setEffectiveTheme] = useState<"light" | "dark">("light");
   const [hotkey, setHotkey]   = useState("Ctrl+Space");
 
@@ -53,7 +55,22 @@ export default function App() {
 
   useEffect(() => { 
     inputRef.current?.focus(); 
-    invoke<string>("get_hotkey_string").then(setHotkey).catch(console.error);
+
+    // Initial load
+    invoke<FullConfig>("get_full_config").then(cfg => {
+      setHotkey(cfg.hotkey);
+      setTheme(cfg.theme);
+    }).catch(console.error);
+
+    // Listen for config changes from Settings window
+    const unlisten = listen<FullConfig>("config-changed", (event) => {
+      setHotkey(event.payload.hotkey);
+      setTheme(event.payload.theme);
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
   }, []);
 
   useEffect(() => {
@@ -62,7 +79,7 @@ export default function App() {
         const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         setEffectiveTheme(isDark ? "dark" : "light");
       } else {
-        setEffectiveTheme(theme);
+        setEffectiveTheme(theme as "light" | "dark");
       }
     };
     applyTheme();
@@ -89,8 +106,9 @@ export default function App() {
     return () => window.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === "system" ? "light" : prev === "light" ? "dark" : "system");
+  const openSettings = async () => {
+    await invoke("open_settings_window");
+    await invoke("hide_window"); // Hide search bar while settings is open
   };
 
   useEffect(() => {
@@ -248,8 +266,8 @@ export default function App() {
           spellCheck={false}
           autoComplete="off"
         />
-        <div className="theme-toggle" onClick={toggleTheme} title="Switch Theme">
-          {effectiveTheme === "dark" ? <WeatherMoon20Regular /> : <WeatherSunny20Regular />}
+        <div className="theme-toggle" onClick={openSettings} title="Open Settings">
+          <Settings20Regular />
         </div>
       </div>
 
