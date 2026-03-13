@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { 
   Search24Regular, 
   Apps20Regular, 
@@ -7,26 +8,34 @@ import {
   Document20Regular, 
   Globe20Regular, 
   FolderOpen20Regular,
-  WeatherMoon20Regular,
-  WeatherSunny20Regular
+  Calculator20Regular,
+  Clipboard20Regular,
+  Dismiss20Regular
 } from "@fluentui/react-icons";
 import "./App.css";
 
 interface SearchResult {
   name: string;
   path: string;
-  kind: "app" | "file" | "setting" | "web";
+  kind: "app" | "file" | "setting" | "web" | "math" | "clipboard" | "kill";
   score: number;
   icon_base64?: string;
 }
 
-type Theme = "light" | "dark" | "system";
+interface FullConfig {
+  hotkey: string;
+  theme: string;
+  startup: boolean;
+}
 
-const KIND_ICONS = {
+const KIND_ICONS: Record<string, React.ReactNode> = {
   app:     <Apps20Regular />,
   file:    <Document20Regular />,
   setting: <Settings20Regular />,
   web:     <Globe20Regular />,
+  math:    <Calculator20Regular />,
+  clipboard: <Clipboard20Regular />,
+  kill:    <Dismiss20Regular />,
 };
 
 export default function App() {
@@ -34,13 +43,35 @@ export default function App() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme]     = useState<Theme>("system");
+  const [theme, setTheme]     = useState<string>("system");
   const [effectiveTheme, setEffectiveTheme] = useState<"light" | "dark">("light");
+  const [hotkey, setHotkey]   = useState("Ctrl+Space");
+
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isKeyboardNav = useRef(false);
 
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => { 
+    inputRef.current?.focus(); 
+
+    // Initial load
+    invoke<FullConfig>("get_full_config").then(cfg => {
+      setHotkey(cfg.hotkey);
+      setTheme(cfg.theme);
+    }).catch(console.error);
+
+    // Listen for config changes from Settings window
+    const unlisten = listen<FullConfig>("config-changed", (event) => {
+      setHotkey(event.payload.hotkey);
+      setTheme(event.payload.theme);
+    });
+
+    return () => {
+      unlisten.then(f => f());
+    };
+  }, []);
 
   useEffect(() => {
     const applyTheme = () => {
@@ -48,7 +79,7 @@ export default function App() {
         const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
         setEffectiveTheme(isDark ? "dark" : "light");
       } else {
-        setEffectiveTheme(theme);
+        setEffectiveTheme(theme as "light" | "dark");
       }
     };
     applyTheme();
@@ -64,15 +95,33 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", effectiveTheme);
   }, [effectiveTheme]);
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === "system" ? "light" : prev === "light" ? "dark" : "system");
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const container = document.querySelector('.container');
+      if (container && !container.contains(e.target as Node)) {
+        invoke("hide_window").catch(console.error);
+      }
+    };
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => window.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const openSettings = async () => {
+    await invoke("open_settings_window");
+    await invoke("hide_window"); // Hide search bar while settings is open
   };
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!query.trim()) {
-      setResults([]);
-      setLoading(false);
+      setLoading(true);
+      invoke<SearchResult[]>("get_clipboard_history")
+        .then(res => {
+          setResults(res);
+          setSelected(0);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
       return;
     }
 
@@ -90,36 +139,6 @@ export default function App() {
     }, 50);
   }, [query]);
 
-  const handleLaunch = async (idx: number) => {
-    const items = getCombinedResults();
-    if (items[idx]) {
-      await invoke("launch_item", { path: items[idx].path });
-    }
-  };
-
-  const handleOpenFolder = async (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
-    const parentDir = path.substring(0, Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')));
-    if (parentDir) {
-      await invoke("open_path", { path: parentDir });
-    }
-  };
-
-  const handleKey = useCallback((e: KeyboardEvent) => {
-    const total = getCombinedResults().length;
-    if (total === 0) return;
-
-    if (e.key === "ArrowDown") { e.preventDefault(); setSelected(s => (s + 1) % total); }
-    if (e.key === "ArrowUp")   { e.preventDefault(); setSelected(s => (s - 1 + total) % total); }
-    if (e.key === "Enter")     { handleLaunch(selected); }
-    if (e.key === "Escape")    { setQuery(""); setResults([]); }
-  }, [results, selected, query]);
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [handleKey]);
-
   const getCombinedResults = (): SearchResult[] => {
     const combined = [...results];
     if (query.trim()) {
@@ -133,18 +152,104 @@ export default function App() {
     return combined;
   };
 
+  const getVisualResults = (): SearchResult[] => {
+    const combined = getCombinedResults();
+    const tempGrouped: { kind: string, items: SearchResult[] }[] = [];
+    combined.forEach(item => {
+      let g = tempGrouped.find(g => g.kind === item.kind);
+      if (!g) { g = { kind: item.kind, items: [] }; tempGrouped.push(g); }
+      g.items.push(item);
+    });
+    return tempGrouped.flatMap(g => g.items);
+  };
+
   const allResults = getCombinedResults();
-  const isExpanded = query.trim().length > 0;
+  const isExpanded = query.trim().length > 0 || results.length > 0;
 
   const grouped: { kind: string, items: { item: SearchResult, idx: number }[] }[] = [];
-  allResults.forEach((item, idx) => {
+  let currentVisualIdx = 0;
+  allResults.forEach((item) => {
     let group = grouped.find(g => g.kind === item.kind);
     if (!group) {
       group = { kind: item.kind, items: [] };
       grouped.push(group);
     }
-    group.items.push({ item, idx });
+    group.items.push({ item, idx: 0 }); // Placeholder
   });
+
+  grouped.forEach(group => {
+    group.items.forEach(groupItem => {
+      groupItem.idx = currentVisualIdx++;
+    });
+  });
+
+  const handleLaunch = async (idx: number) => {
+    const visualItems = getVisualResults();
+    const item = visualItems[idx];
+    if (item) {
+      if (item.kind === "math") {
+        await invoke("copy_to_clipboard", { text: item.path });
+        setCopiedIndex(idx);
+        setTimeout(() => {
+          setCopiedIndex(null);
+          invoke("hide_window");
+        }, 800);
+      } else if (item.kind === "clipboard") {
+        setQuery(item.path);
+      } else if (item.kind === "kill") {
+        await invoke("kill_process", { name: item.path });
+        await invoke("hide_window");
+      } else {
+        await invoke("launch_item", { path: item.path });
+        await invoke("hide_window");
+      }
+    }
+  };
+
+  const handleOpenFolder = async (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    const parentDir = path.substring(0, Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')));
+    if (parentDir) {
+      await invoke("open_path", { path: parentDir });
+    }
+  };
+
+  const handleKey = useCallback(async (e: KeyboardEvent) => {
+    if (e.key === "Escape") { 
+      if (query === "") {
+        await invoke("hide_window");
+      } else {
+        setQuery(""); 
+      }
+      return;
+    }
+
+    const visualItems = getVisualResults();
+    const total = visualItems.length;
+    if (total === 0) return;
+
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      isKeyboardNav.current = true;
+      if ((window as any).keyboardNavTimeout) clearTimeout((window as any).keyboardNavTimeout);
+      (window as any).keyboardNavTimeout = setTimeout(() => { isKeyboardNav.current = false; }, 150);
+    }
+
+    if (e.key === "ArrowDown") { e.preventDefault(); setSelected(s => (s + 1) % total); }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setSelected(s => (s - 1 + total) % total); }
+    if (e.key === "Enter")     { handleLaunch(selected); }
+  }, [results, selected, query]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKey as any);
+    return () => window.removeEventListener("keydown", handleKey as any);
+  }, [handleKey]);
+
+  useEffect(() => {
+    const selectedEl = document.querySelector('.result-item.selected');
+    if (selectedEl) {
+      selectedEl.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selected]);
 
   return (
     <div className={`container ${isExpanded ? 'expanded' : ''}`}>
@@ -161,8 +266,8 @@ export default function App() {
           spellCheck={false}
           autoComplete="off"
         />
-        <div className="theme-toggle" onClick={toggleTheme} title="Switch Theme">
-          {effectiveTheme === "dark" ? <WeatherMoon20Regular /> : <WeatherSunny20Regular />}
+        <div className="theme-toggle" onClick={openSettings} title="Open Settings">
+          <Settings20Regular />
         </div>
       </div>
 
@@ -175,7 +280,11 @@ export default function App() {
                 key={`${item.kind}-${item.path}`}
                 className={`result-item ${selected === idx ? 'selected' : ''}`}
                 onClick={() => handleLaunch(idx)}
-                onMouseEnter={() => setSelected(idx)}
+                onMouseMove={() => {
+                  if (!isKeyboardNav.current && selected !== idx) {
+                    setSelected(idx);
+                  }
+                }}
               >
                 <div className="result-icon">
                   {item.icon_base64 ? (
@@ -185,9 +294,12 @@ export default function App() {
                   )}
                 </div>
                 <div className="result-info">
-                  <div className="result-name">{item.name}</div>
+                  <div className="result-name">
+                    {item.kind === 'clipboard' ? `Search: ${item.name}` : item.name}
+                  </div>
                 </div>
-                {item.kind !== 'web' && item.kind !== 'setting' && (
+                {copiedIndex === idx && <span className="copied-label">Copied!</span>}
+                {item.kind !== 'web' && item.kind !== 'setting' && item.kind !== 'clipboard' && item.kind !== 'math' && item.kind !== 'kill' && (
                   <div 
                     className="action-btn" 
                     title="Open in folder"
@@ -217,7 +329,7 @@ export default function App() {
             <span className="hint-label">Clear</span>
           </div>
         </div>
-        <div style={{ fontWeight: 700, letterSpacing: '0.05em' }}>WINDOWS SEARCH TOOL</div>
+        <div style={{ fontWeight: 700, letterSpacing: '0.05em' }}>WINDOWS SEARCH TOOL • {hotkey}</div>
       </div>
     </div>
   );

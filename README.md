@@ -41,17 +41,21 @@ It searches the things most people search for most of the time, and it does that
 
 ## Features
 
-- **`Ctrl+Space` global hotkey** — works from any application, no focus required.
+- **Custom Global Hotkey** — record your own shortcut (e.g., `Ctrl+Space`) via settings.
 - **Fluent Design (Mica)** — A high-end Windows 11-inspired interface with deep 32px backdrop blur and high-contrast typography.
+- **Dedicated Settings Window** — Manage theme (Light/Dark/System), custom hotkeys, and auto-start behavior in a standalone UI.
+- **Advanced Kill Command** — Type `kill <name>` to search through actual open window titles and instantly terminate apps by PID.
+- **Clipboard History** — Instant access to your last 10 unique clipboard entries as search triggers.
+- **Calculator with Feedback** — Perform math and get instant "Copied!" visual feedback.
 - **Native Icon Extraction** — Rust-powered extraction of real icons from `.lnk` and `.exe` files for instant recognition.
 - **Progressive Disclosure** — UI starts as a minimal search bar and expands gracefully as you type.
 - **Fuzzy Search** — Typo-tolerant matching powered by the `skim` algorithm.
 - **Open Folder Action** — Functional action buttons to jump directly to an item's containing directory.
-- **Theme Switching** — Auto-detects system Light/Dark mode with a manual toggle in the search bar.
+- **Theme Switching** — Auto-detects system Light/Dark mode with persistence.
 - **Instant results** — Index lives in RAM, searches complete in under 5ms.
 - **Web fallback** — Bottom result always opens a Google search for your query in your default browser.
 - **System tray** — Runs silently in the background, accessible via tray icon.
-- **Auto-start on login** — Registers to `HKCU` run key, no admin required.
+- **Auto-start on login** — Registers to `HKCU` run key, togglable in settings.
 - **Non-admin** — `asInvoker` execution level, zero UAC prompts, ever.
 
 ---
@@ -85,11 +89,11 @@ Output: `src-tauri/target/release/windows-search-tool.exe`
 
 | Action | Shortcut |
 |---|---|
-| Open search | `Ctrl+Space` |
+| Open search | `Custom` (Default: `Ctrl+Space`) |
 | Navigate results | `↑` / `↓` |
 | Launch selected | `Enter` |
+| Open Settings | Click gear icon |
 | Open Folder | Click folder icon |
-| Switch Theme | Click sun/moon icon |
 | Clear / close | `Esc` |
 | Click away | Auto-closes |
 

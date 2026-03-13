@@ -54,7 +54,7 @@ body {
 .container {
   width: 680px;
   height: auto;
-  min-height: 64px;
+  max-height: 64px;
   background: var(--bg-mica);
   backdrop-filter: blur(32px);
   -webkit-backdrop-filter: blur(32px);
@@ -63,11 +63,11 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
+  transition: max-height 0.4s cubic-bezier(0.1, 0.9, 0.2, 1);
 }
 
 .container.expanded {
-  height: 600px;
+  max-height: 600px;
 }
 
 .search-header {
@@ -114,6 +114,33 @@ body {
   opacity: 0;
   transform: translateY(10px);
   transition: all 0.3s ease 0.1s;
+}
+
+/* Modern Scrollbar */
+.results-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.results-list::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+}
+
+.results-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+.results-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme='light'] .results-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='light'] .results-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .container.expanded .results-list {
@@ -200,6 +227,19 @@ body {
 .action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
+}
+
+.copied-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-right: 8px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(5px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 .footer {
