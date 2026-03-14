@@ -11,6 +11,7 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use std::str::FromStr;
+use std::process::Command;
 
 #[derive(serde::Deserialize, serde::Serialize, Default, Clone)]
 struct AppConfig {
@@ -52,8 +53,64 @@ fn check_autostart() -> bool {
     false
 }
 
+fn create_vbs_launcher(exe_path: &std::path::Path, vbs_path: &std::path::Path) -> Result<(), String> {
+    let exe_path_str = exe_path.to_string_lossy().replace("\\", "\\\\");
+    let vbs_content = format!(
+        r#"Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run "{}", 0, False
+Set WshShell = Nothing"#,
+        exe_path_str
+    );
+    std::fs::write(vbs_path, vbs_content)
+        .map_err(|e| format!("Failed to create VBS launcher: {}", e))
+}
+
+fn get_system_uptime_seconds() -> u64 {
+    use windows::Win32::System::SystemInformation::GetTickCount64;
+    unsafe {
+        GetTickCount64() / 1000
+    }
+}
+
+fn is_webview2_available() -> bool {
+    use winreg::enums::*;
+    
+    let check_keys = [
+        r"SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+        r"SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+    ];
+    
+    for key_path in &check_keys {
+        if let Ok(key) = winreg::RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey_with_flags(key_path, KEY_READ) {
+            if let Ok(_) = key.get_value::<String, _>("pv") {
+                return true;
+            }
+        }
+        if let Ok(key) = winreg::RegKey::predef(HKEY_CURRENT_USER).open_subkey_with_flags(key_path, KEY_READ) {
+            if let Ok(_) = key.get_value::<String, _>("pv") {
+                return true;
+            }
+        }
+    }
+    
+    // Also check for Evergreen Standalone
+    if let Ok(key) = winreg::RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey_with_flags(
+        r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft Edge WebView2 Runtime",
+        KEY_READ
+    ) {
+        if let Ok(_) = key.get_value::<String, _>("DisplayVersion") {
+            return true;
+        }
+    }
+    
+    false
+}
+
 fn set_autostart(enable: bool) {
     if let Ok(exe) = std::env::current_exe() {
+        let config_dir = exe.parent().unwrap_or(std::path::Path::new("."));
+        let vbs_path = config_dir.join("windows-search-tool-launcher.vbs");
+        
         if let Ok(key) = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER)
             .open_subkey_with_flags(
                 r"Software\Microsoft\Windows\CurrentVersion\Run",
@@ -61,9 +118,18 @@ fn set_autostart(enable: bool) {
             ) 
         {
             if enable {
-                let _ = key.set_value("windows-search-tool", &exe.to_string_lossy().as_ref());
+                // Create VBS wrapper to hide console window
+                if let Err(e) = create_vbs_launcher(&exe, &vbs_path) {
+                    eprintln!("Failed to create VBS launcher: {}", e);
+                    // Fallback to direct exe path
+                    let _ = key.set_value("windows-search-tool", &exe.to_string_lossy().as_ref());
+                } else {
+                    let _ = key.set_value("windows-search-tool", &vbs_path.to_string_lossy().as_ref());
+                }
             } else {
                 let _ = key.delete_value("windows-search-tool");
+                // Clean up VBS file if it exists
+                let _ = std::fs::remove_file(&vbs_path);
             }
         }
     }
@@ -186,7 +252,41 @@ fn start_settings_window_drag(app: tauri::AppHandle) {
     }
 }
 
+fn check_and_wait_for_webview2() {
+    // Check system uptime - if system just booted (< 60 seconds), wait for WebView2
+    let uptime = get_system_uptime_seconds();
+    if uptime < 60 {
+        println!("System recently booted ({}s). Waiting for WebView2 initialization...", uptime);
+        
+        // Wait up to 10 seconds for WebView2 to be ready
+        for i in 0..20 {
+            if is_webview2_available() {
+                println!("WebView2 is available after {}s", i * 500);
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+        
+        // Additional safety delay
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    }
+    
+    if !is_webview2_available() {
+        eprintln!("WARNING: WebView2 Runtime not detected!");
+        // Try to install WebView2
+        if let Err(e) = Command::new("cmd")
+            .args(["/c", "start", "", "https://developer.microsoft.com/en-us/microsoft-edge/webview2/"])
+            .spawn() 
+        {
+            eprintln!("Failed to open WebView2 download page: {}", e);
+        }
+    }
+}
+
 fn main() {
+    // Check WebView2 and add startup delay before initializing Tauri
+    check_and_wait_for_webview2();
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -195,8 +295,6 @@ fn main() {
             let handle = app.handle().clone();
 
             let current_config = get_full_config(handle.clone());
-            // If it's not configured in autostart but should be by default on install,
-            // we could enforce it here, but let's just respect the current registry state.
 
             // Init clipboard listener
             clipboard::init_clipboard_listener();

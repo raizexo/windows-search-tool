@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { applyThemeVariables } from "./utils/theme";
 import "./App.css";
 import "./Settings.css";
 
@@ -8,6 +9,15 @@ interface FullConfig {
   theme: string;
   startup: boolean;
 }
+
+const THEMES = [
+  "amoled", "aura", "ayu", "carbonfox", "catppuccin-frappe", "catppuccin-macchiato", 
+  "catppuccin", "cobalt2", "cursor", "dracula", "everforest", "flexoki", "github", 
+  "gruvbox", "kanagawa", "lucent-orng", "material", "matrix", "mercury", "monokai", 
+  "nightowl", "nord", "oc-2", "one-dark", "onedarkpro", "orng", "osaka-jade", 
+  "palenight", "rosepine", "shadesofpurple", "solarized", "synthwave84", 
+  "tokyonight", "vercel", "vesper", "zenburn"
+];
 
 export default function Settings() {
   const [config, setConfig] = useState<FullConfig | null>(null);
@@ -23,10 +33,7 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
-    const effectiveTheme = tempTheme === "system" 
-      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") 
-      : tempTheme;
-    document.documentElement.setAttribute("data-theme", effectiveTheme);
+    applyThemeVariables(tempTheme);
   }, [tempTheme]);
 
   const handleSave = async () => {
@@ -99,26 +106,18 @@ export default function Settings() {
         
         <div className="settings-group">
           <label>Theme</label>
-          <div className="theme-options">
-            <button 
-              className={`theme-btn ${tempTheme === "light" ? "active" : ""}`}
-              onClick={() => setTempTheme("light")}
-            >
-              Light
-            </button>
-            <button 
-              className={`theme-btn ${tempTheme === "dark" ? "active" : ""}`}
-              onClick={() => setTempTheme("dark")}
-            >
-              Dark
-            </button>
-            <button 
-              className={`theme-btn ${tempTheme === "system" ? "active" : ""}`}
-              onClick={() => setTempTheme("system")}
-            >
-              System
-            </button>
-          </div>
+          <select 
+            className="theme-select"
+            value={tempTheme}
+            onChange={(e) => setTempTheme(e.target.value)}
+          >
+            <option value="system">System Default</option>
+            <option value="light">Default Light</option>
+            <option value="dark">Default Dark</option>
+            {THEMES.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
         </div>
 
         <div className="settings-group">

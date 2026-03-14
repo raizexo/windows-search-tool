@@ -17,6 +17,7 @@
   --hint-badge: rgba(255, 255, 255, 0.85);
   --hint-badge-bg: rgba(255, 255, 255, 0.10);
   --hint-label: rgba(255, 255, 255, 0.45);
+  --text-on-accent: #ffffff;
 
   font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
 }
@@ -34,6 +35,7 @@
   --hint-badge: #1c1c1c;
   --hint-badge-bg: rgba(0, 0, 0, 0.05);
   --hint-label: rgba(0, 0, 0, 0.6);
+  --text-on-accent: #ffffff; /* Blue accent in light mode works with white text */
 }
 
 [data-theme='dark'] {
@@ -95,12 +97,8 @@ body {
   background: transparent;
   border: none;
   outline: none;
-  color: #FFFFFF;
+  color: var(--text-primary);
   font-size: 20px;
-}
-
-[data-theme='light'] .search-input {
-  color: #1c1c1c;
 }
 
 .search-input::placeholder {

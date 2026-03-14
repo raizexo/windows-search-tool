@@ -22,7 +22,7 @@ fuzzy-matcher = "0.3"
 image = "0.25"
 base64 = "0.22"
 winreg = "0.52"
-windows = { version = "0.58", features = ["Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi", "Win32_Foundation", "Win32_System_Com", "Win32_Storage_FileSystem", "Win32_System_DataExchange", "Win32_System_LibraryLoader"] }
+windows = { version = "0.58", features = ["Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi", "Win32_Foundation", "Win32_System_Com", "Win32_Storage_FileSystem", "Win32_System_DataExchange", "Win32_System_LibraryLoader", "Win32_System_SystemInformation"] }
 meval = "0.2.0"
 tauri-plugin-clipboard-manager = "2.3.2"
 arboard = "3.6.1"
