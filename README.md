@@ -19,7 +19,12 @@ No bloat. No Electron. No admin rights. Just search.
 
 ---
 
-![windows-search-tool demo](demo/demo.gif)
+<div align="center" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+
+<img src="demo/photos/newui.png" width="65%" alt="windows-search-tool main ui" />
+<img src="demo/photos/settings-ui.png" width="30%" alt="windows-search-tool settings" />
+
+</div>
 
 ---
 
