@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { applyThemeVariables } from "./utils/theme";
 import { 
   Search24Regular, 
   Apps20Regular, 
@@ -44,7 +45,6 @@ export default function App() {
   const [selected, setSelected] = useState(0);
   const [loading, setLoading] = useState(false);
   const [theme, setTheme]     = useState<string>("system");
-  const [effectiveTheme, setEffectiveTheme] = useState<"light" | "dark">("light");
   const [hotkey, setHotkey]   = useState("Ctrl+Space");
 
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -74,26 +74,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const applyTheme = () => {
-      if (theme === "system") {
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        setEffectiveTheme(isDark ? "dark" : "light");
-      } else {
-        setEffectiveTheme(theme as "light" | "dark");
-      }
-    };
-    applyTheme();
+    applyThemeVariables(theme);
     if (theme === "system") {
       const media = window.matchMedia("(prefers-color-scheme: dark)");
-      const listener = () => applyTheme();
+      const listener = () => applyThemeVariables(theme);
       media.addEventListener("change", listener);
       return () => media.removeEventListener("change", listener);
     }
   }, [theme]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", effectiveTheme);
-  }, [effectiveTheme]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

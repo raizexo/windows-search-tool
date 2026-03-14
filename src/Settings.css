@@ -50,35 +50,30 @@
   color: var(--text-primary);
 }
 
-.theme-options {
-  display: flex;
-  gap: 8px;
-}
-
-.theme-btn {
+.theme-select {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   color: var(--text-primary);
-  padding: 8px 16px;
+  padding: 8px 12px;
   border-radius: 6px;
-  cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s;
-  flex: 1;
+  outline: none;
+  width: 100%;
+  cursor: pointer;
+  appearance: auto;
 }
 
-[data-theme='light'] .theme-btn {
+[data-theme='light'] .theme-select {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.theme-btn:hover {
+.theme-select:hover {
   background: var(--hover);
 }
 
-.theme-btn.active {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+.theme-select option {
+  background: var(--bg-mica);
+  color: var(--text-primary);
 }
 
 .hotkey-input-wrapper {
@@ -181,7 +176,7 @@
 .btn-save {
   background: var(--accent);
   border: 1px solid var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
 }
 
 .btn-save:hover {

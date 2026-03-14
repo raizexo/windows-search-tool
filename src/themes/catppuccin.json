@@ -1,0 +1,16 @@
+{
+  "--bg-mica": "rgba(30, 30, 46, 0.92)",
+  "--text-primary": "rgba(205, 214, 244, 0.9)",
+  "--text-secondary": "rgba(205, 214, 244, 0.5)",
+  "--accent": "#b4befe",
+  "--text-on-accent": "#000000",
+  "--border": "rgba(255, 255, 255, 0.10)",
+  "--hover": "rgba(255, 255, 255, 0.08)",
+  "--placeholder": "rgba(205, 214, 244, 0.3)",
+  "--footer-bg": "rgba(0, 0, 0, 0.3)",
+  "--footer-border": "rgba(255, 255, 255, 0.06)",
+  "--footer-text": "rgba(205, 214, 244, 0.4)",
+  "--hint-badge": "rgba(205, 214, 244, 0.85)",
+  "--hint-badge-bg": "rgba(255, 255, 255, 0.10)",
+  "--hint-label": "rgba(205, 214, 244, 0.45)"
+}
